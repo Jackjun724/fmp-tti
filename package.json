@@ -1,0 +1,29 @@
+{
+  "name": "fmp-tti",
+  "version": "1.0.0",
+  "description": "自动化无埋点方式计算页面FCP/FMP/TTI时间",
+  "main": "index.js",
+  "scripts": {
+    "start": "node build.js -d",
+    "build": "node build.js",
+    "publish": "npm publish",
+    "beta": "npm publish --tag beta"
+  },
+  "author": "ctchen",
+  "license": "MulanPSL-1.0",
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/preset-env": "^7.5.5",
+    "@typescript-eslint/parser": "^2.1.0",
+    "rollup": "^1.19.4",
+    "rollup-plugin-babel": "^4.3.3",
+    "rollup-plugin-eslint": "^7.0.0",
+    "rollup-plugin-typescript": "^1.0.1",
+    "rollup-plugin-uglify": "^6.0.2",
+    "typescript": "^3.6.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xingqiao/fmp-tti.git"
+  }
+}
