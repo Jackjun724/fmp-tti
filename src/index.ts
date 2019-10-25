@@ -10,7 +10,7 @@ interface SpdPoint {
     p: SpdPoint;
 }
 
-export default (function (window: Window, document: Document) {
+export default (function(window: Window, document: Document) {
     const { innerHeight: windowHeight, performance, setTimeout } = window;
     let timing = performance && performance.timing;
     /** requestStart时间 */
@@ -55,7 +55,7 @@ export default (function (window: Window, document: Document) {
      */
     function getText(node: Node): string {
         let text = node.textContent;
-        return text && text.trim()
+        return text && text.trim();
     }
 
     /** 是否已经出发DomReady */
@@ -80,12 +80,7 @@ export default (function (window: Window, document: Document) {
      * @param node {Node} 元素节点
      */
     function isContentText(node: Node) {
-        return (
-            node &&
-            node.nodeType === 1 &&
-            getText(node) &&
-            isContentElement(node.parentElement)
-        );
+        return node && node.nodeType === 1 && getText(node) && isContentElement(node.parentElement);
     }
 
     /**
@@ -111,10 +106,7 @@ export default (function (window: Window, document: Document) {
                 if (domReac.width > 0 && domReac.height > 0) {
                     let isImage = node.tagName === 'IMG';
                     if (!isImage) {
-                        if (
-                            getText(node) ||
-                            getComputedStyle(node).backgroundImage !== 'none'
-                        ) {
+                        if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
                             // 只统计首屏内元素，不再需要根据top值来计算得分
                             // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
                             score = 1;
@@ -171,10 +163,7 @@ export default (function (window: Window, document: Document) {
                     if (currentFrameTime - lastFrameTime > 50) {
                         lastLongTaskTime = currentFrameTime;
                     }
-                    if (
-                        currentFrameTime - lastLongTaskTime > 1000 ||
-                        currentFrameTime - START_TIME > 5000
-                    ) {
+                    if (currentFrameTime - lastLongTaskTime > 1000 || currentFrameTime - START_TIME > 5000) {
                         tti = lastLongTaskTime - START_TIME;
                     } else {
                         checkLongTask();
@@ -243,7 +232,8 @@ export default (function (window: Window, document: Document) {
      */
     function checkNodeList(nodes: NodeList) {
         let score = 0;
-        nodes.forEach(node => {
+        for (let i = 0, l = nodes.length; i < l; i++) {
+            let node = nodes[i]
             if ((<HTMLElement>node).tagName === 'IMG') {
                 node.addEventListener('load', addImgScore);
             } else if (isContentElement(<HTMLElement>node)) {
@@ -251,7 +241,7 @@ export default (function (window: Window, document: Document) {
             } else if (isContentText(node)) {
                 score += 1;
             }
-        });
+        }
         return score;
     }
 

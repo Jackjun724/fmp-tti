@@ -1,6 +1,6 @@
 {
   "name": "fmp-tti",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "自动化无埋点方式计算页面FCP/FMP/TTI时间",
   "main": "index.js",
   "scripts": {

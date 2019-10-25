@@ -62,10 +62,7 @@ var index = (function (window, document) {
      * @param node {Node} 元素节点
      */
     function isContentText(node) {
-        return (node &&
-            node.nodeType === 1 &&
-            getText(node) &&
-            isContentElement(node.parentElement));
+        return node && node.nodeType === 1 && getText(node) && isContentElement(node.parentElement);
     }
     /**
      * 是否是有效的内容标签
@@ -89,8 +86,7 @@ var index = (function (window, document) {
                 if (domReac.width > 0 && domReac.height > 0) {
                     var isImage = node.tagName === 'IMG';
                     if (!isImage) {
-                        if (getText(node) ||
-                            getComputedStyle(node).backgroundImage !== 'none') {
+                        if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
                             // 只统计首屏内元素，不再需要根据top值来计算得分
                             // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
                             score = 1;
@@ -150,8 +146,7 @@ var index = (function (window, document) {
                     if (currentFrameTime - lastFrameTime_1 > 50) {
                         lastLongTaskTime = currentFrameTime;
                     }
-                    if (currentFrameTime - lastLongTaskTime > 1000 ||
-                        currentFrameTime - START_TIME > 5000) {
+                    if (currentFrameTime - lastLongTaskTime > 1000 || currentFrameTime - START_TIME > 5000) {
                         tti = lastLongTaskTime - START_TIME;
                     }
                     else {
@@ -219,7 +214,8 @@ var index = (function (window, document) {
      */
     function checkNodeList(nodes) {
         var score = 0;
-        nodes.forEach(function (node) {
+        for (var i = 0, l = nodes.length; i < l; i++) {
+            var node = nodes[i];
             if (node.tagName === 'IMG') {
                 node.addEventListener('load', addImgScore);
             }
@@ -229,7 +225,7 @@ var index = (function (window, document) {
             else if (isContentText(node)) {
                 score += 1;
             }
-        });
+        }
         return score;
     }
     if (!enabled || !START_TIME || typeof MutationObserver !== 'function') {
