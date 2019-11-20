@@ -142,3 +142,23 @@ graph TD;
     check_empty2 -- 否 --> step_busy
     tti -- 对齐 DOM Ready 时间 --> stop((结束))
 ```
+
+setTimeout 1 可能会导致大量循环，对性能影响较大，可以根据每次响应间隔时间来调整定时器间隔，优化后的 `TTI` 计算流程流程：
+
+```mermaid
+graph TD;
+    start((开始)) --> fmp(FMP时间点) --> step_0[设置初始定时器间隔时间 $T = 1ms]
+    step_0 --> check_ready{连续空闲时间 > 1s}
+    check_ready -- 是 --> info_3(标记开始空闲的时间为待选 TTI时间点) -- 对齐 DOM Ready 时间 --> stop((结束))
+    check_ready -- 否 --> settimeout[标记当前时间与定时器触发的时间间隔值为 $D]
+    wait_next[准备开始下一次检测] --> check_ready
+    settimeout --> info_0(判断是否线程繁忙) --> check_50{$D > 50ms ?}
+    check_50 -- 是 --> info_2(线程繁忙,缩短定时器时间间隔) --> step_4[$T = $T / 2] --> wait_next
+    check_50 -- 否 --> info_1(线程空闲,根据响应偏差情况调整定时器间隔) --> check_10{$D - $T < 10 ?}
+    check_10 -- 是 --> check_16{$D < 16ms ?}
+    check_10 -- 否 --> wait_next
+    check_16 -- 是 --> step_1[$T = $T * 2] --> wait_next
+    check_16 -- 否 --> check_25{$D < 25ms ?}
+    check_25 -- 是 --> step_2[$T = $T + 1] --> wait_next
+    check_25 -- 否 --> step_3[$T = 25ms] --> wait_next
+```
