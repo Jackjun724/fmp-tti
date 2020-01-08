@@ -2,6 +2,7 @@ import * as storage from './utils/storage'
 import getText from './utils/getText';
 import isContentElement from './utils/isContentElement';
 import isContentText from './utils/isContentText';
+import isFunction from '@qmfe/is-function';
 
 /** 渲染统计点 */
 interface SpdPoint {
@@ -29,7 +30,7 @@ interface SpdResult {
 const win = window;
 const doc = document;
 
-const { innerHeight: windowHeight, performance, setTimeout } = win;
+const { innerHeight: windowHeight, performance, setTimeout, MutationObserver } = win;
 let timing = performance && performance.timing;
 /** 开始时间 */
 const START_TIME: number = timing && timing.navigationStart;
@@ -231,7 +232,7 @@ function checkNodeList(nodes: NodeList): number {
     return score;
 }
 
-if (!enabled || !START_TIME || typeof MutationObserver !== 'function') {
+if (!enabled || !START_TIME || !MutationObserver) {
     ended = true;
 } else {
     doc.addEventListener('DOMContentLoaded', () => {
@@ -260,7 +261,7 @@ if (!enabled || !START_TIME || typeof MutationObserver !== 'function') {
             storage.removeItem(cacheKey);
             ended = true;
             observer.disconnect();
-            if (enabled && typeof onEnded === 'function') {
+            if (enabled && isFunction(onEnded)) {
                 let now = getNow();
                 onEnded(result || {
                     fcp: fcp ? fcp.t : now,

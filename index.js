@@ -60,10 +60,33 @@ function isContentText(node) {
     return node && node.nodeType === 1 && getText(node) && isContentElement(node.parentElement);
 }
 
+/**
+ * 判断 `value` 是否是 `Function` 类型
+ * 
+ * @param {any} value 需要判断的值
+ * @returns {boolean} 如果是则返回true，否则返回false
+ * @example
+ *
+ * isFunction(async function() {})
+ * // => true
+ * 
+ * isFunction(function() {})
+ * // => true
+ *
+ * isFunction(/abc/)
+ * // => false
+ * 
+ * isFunction({})
+ * // => false
+ */
+function isFunction(value) {
+  return typeof value === 'function';
+}
+
 // 使用临时变量，建设压缩后的文件大小
 var win = window;
 var doc = document;
-var windowHeight = win.innerHeight, performance = win.performance, setTimeout = win.setTimeout;
+var windowHeight = win.innerHeight, performance = win.performance, setTimeout = win.setTimeout, MutationObserver = win.MutationObserver;
 var timing = performance && performance.timing;
 /** 开始时间 */
 var START_TIME = timing && timing.navigationStart;
@@ -263,7 +286,7 @@ function checkNodeList(nodes) {
     }
     return score;
 }
-if (!enabled || !START_TIME || typeof MutationObserver !== 'function') {
+if (!enabled || !START_TIME || !MutationObserver) {
     ended = true;
 }
 else {
@@ -293,7 +316,7 @@ else {
             removeItem(cacheKey);
             ended = true;
             observer_1.disconnect();
-            if (enabled && typeof onEnded === 'function') {
+            if (enabled && isFunction(onEnded)) {
                 var now = getNow();
                 onEnded(result || {
                     fcp: fcp ? fcp.t : now,
