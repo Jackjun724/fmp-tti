@@ -1,7 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import { eslint } from 'rollup-plugin-eslint';
 import process from 'process';
-import rollup from 'rollup';
 import typescript from 'rollup-plugin-typescript';
 import { uglify } from 'rollup-plugin-uglify';
 
