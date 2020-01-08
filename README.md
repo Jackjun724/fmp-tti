@@ -24,15 +24,14 @@
 npm i -S fmp-tti
 ```
 
-根据需要设置页面 TTI 超时时间
+根据需要设置页面 TTI 超时时间阈值
 
 ```js
-// 需要在引入组件前设置，默认值为 5000（5秒）
-window.TTI_LIMIT = 5000;
+// 需要在引入组件前设置，默认值为 10000（10秒）
+window.TTI_LIMIT = 10000;
 ```
 
 在 `<head>` 标签中， `css` 加载前引入组件
-
 - ES6 方式引入
     ```js
     import FT from 'fmp-tti';
@@ -42,13 +41,19 @@ window.TTI_LIMIT = 5000;
     <script src="./fmp-tti/index.iife.js"></script>
     ```
 
-获取检测结果
-
+达到超时时间阈值后，系统会返回检测结果，值为从 `navigationStart` 到对应节点的耗时。
 ```js
 FT.then(({ fcp, fmp, tti }) => {
     console.log('首次内容绘制（FCP） - %dms', fcp);
     console.log('首次有意义绘制（FMP） - %dms', fmp);
     console.log('可交互时间（TTI） - %dms', tti);
+});
+```
+
+如果系统已经检测到 TTI 时间，但是还没达到超时时间阈值，此时用户关闭了页面，这时组件会将检测结果存放在 `localStorage` 缓存中，下次打开时可以通过 `FT.then()` 方法来获取上次检测结果。
+```js
+FT.last(({ fcp, fmp, tti }) => {
+    console.log('上次检测结果', { fcp, fmp, tti });
 });
 ```
 
@@ -91,7 +96,7 @@ FT.then(({ fcp, fmp, tti }) => {
 总的算法整体流程如下：
 ```mermaid
 graph TD;
-    start((开始)) --> step_start[获取requestStart时间点]
+    start((开始)) --> step_start[获取navigationStart时间点]
     step_start --> step_observe[MutationObserver监听]
     step_observe -- 监听到新添DOM节点 --> step_change(获取新添的DOM节点)
     step_change -- NodeList --> step_stat>计算渲染得分]
