@@ -2,8 +2,8 @@
 var storage = localStorage;
 /**
  * 保存数据
- * @param key {string}
- * @param value {string}
+ * @param {string} key
+ * @param {string} value
  */
 function setItem(key, value) {
     try {
@@ -13,7 +13,7 @@ function setItem(key, value) {
 }
 /**
  * 获取数据
- * @param key {string}
+ * @param {string} key
  * @returns {string}
  */
 function getItem(key) {
@@ -24,7 +24,7 @@ function getItem(key) {
 }
 /**
  * 删除数据
- * @param key {string}
+ * @param {string} key
  */
 function removeItem(key) {
     try {
@@ -35,7 +35,7 @@ function removeItem(key) {
 
 /**
  * 获取节点文本内容
- * @param node {Node} 元素节点
+ * @param {Node} node 元素节点
  * @returns {string} 文本内容
  */
 function getText(node) {
@@ -45,7 +45,7 @@ function getText(node) {
 
 /**
  * 是否是有效的内容标签
- * @param node {HTMLElement} 元素节点
+ * @param {HTMLElement} node 元素节点
  */
 function isContentElement(node) {
     var tagName = node && node.tagName;
@@ -54,7 +54,7 @@ function isContentElement(node) {
 
 /**
  * 是否是有内容的文本标签
- * @param node {Node} 元素节点
+ * @param {Node} node 元素节点
  */
 function isContentText(node) {
     return node && node.nodeType === 1 && getText(node) && isContentElement(node.parentElement);
@@ -97,17 +97,15 @@ var FMP_DURATION = 50;
 /** 用来存储检测结果 */
 var cacheKey = "ft-" + location.pathname;
 /** 是否开启统计 */
-var enabled = true;
-/**
- * 检测完成回调
- * @param result {SpdResult} 检测结果
- */
-var onEnded;
+var enabled = !!(START_TIME && MutationObserver);
+/** 是否已经完成检测 */
+var ended = !enabled;
+/** 用于存放检测完成的回调方法 */
+var thenActionList = [];
 /** FCP（首次内容渲染） */
 var fcp;
 /** FMP（首次有意义渲染） */
 var fmp;
-var ended;
 var currentPaintPoint;
 var result;
 var lastResult;
@@ -123,8 +121,19 @@ function getNow() {
     return Date.now() - START_TIME;
 }
 /**
+ * 提取检测结果
+ * @param {number} tti tti时间
+ */
+function setResult(tti) {
+    result = {
+        fcp: fcp ? fcp.t : tti,
+        fmp: fmp ? fmp.t : tti,
+        tti: tti
+    };
+}
+/**
  * 测试节点得分
- * @param node {HTMLElement} 待检测节点
+ * @param {HTMLElement} node 待检测节点
  * @returns {number} 得分
  */
 function checkNodeScore(node) {
@@ -195,11 +204,7 @@ function checkTTI() {
                 }
                 if (currentFrameTime - lastLongTaskTime > 1000 || currentFrameTime > DURATION) {
                     // 记录下来，如果页面被关闭，下次打开时可以使用本次结果上报
-                    result = {
-                        fcp: fcp.t,
-                        fmp: fmp.t,
-                        tti: lastLongTaskTime
-                    };
+                    setResult(lastLongTaskTime);
                     setItem(cacheKey, JSON.stringify(result));
                 }
                 else {
@@ -212,7 +217,7 @@ function checkTTI() {
 }
 /**
  * 记录每阶段得分变化
- * @param score {number} 本次得分
+ * @param {number} score 本次得分
  */
 function addScore(score) {
     if (score > 0) {
@@ -259,7 +264,7 @@ function addScore(score) {
 }
 /**
  * 计算并记录图片节点得分
- * @param event {Event}
+ * @param {Event} event
  */
 function addImgScore() {
     addScore(checkNodeScore(this));
@@ -267,7 +272,7 @@ function addImgScore() {
 }
 /**
  * 测试节点列表得分
- * @param nodes {NodeList} 节点列表
+ * @param {NodeList} nodes 节点列表
  * @returns {number} 得分
  */
 function checkNodeList(nodes) {
@@ -286,10 +291,7 @@ function checkNodeList(nodes) {
     }
     return score;
 }
-if (!enabled || !START_TIME || !MutationObserver) {
-    ended = true;
-}
-else {
+if (enabled) {
     doc.addEventListener('DOMContentLoaded', function () {
         isReady = true;
         if (onReady) {
@@ -315,14 +317,12 @@ else {
         if (!ended) {
             removeItem(cacheKey);
             ended = true;
+            if (!result) {
+                setResult(getNow());
+            }
             observer_1.disconnect();
-            if (enabled && isFunction(onEnded)) {
-                var now = getNow();
-                onEnded(result || {
-                    fcp: fcp ? fcp.t : now,
-                    fmp: fmp ? fmp.t : now,
-                    tti: now
-                });
+            if (enabled) {
+                thenActionList.forEach(function (item) { return item(result); });
             }
         }
     }, DURATION);
@@ -343,7 +343,7 @@ var index = {
     },
     /**
      * 检测是否有上次未完成的检测结果，有结果时会触发回调
-     * @param callback({ fcp, fmp, tti }) {Function}
+     * @param {Function} callback({ fcp, fmp, tti })
      */
     last: function (callback) {
         if (lastResult) {
@@ -357,10 +357,17 @@ var index = {
     },
     /**
      * 检测完成后触发
-     * @param callback({ fcp, fmp, tti }) {Function}
+     * @param {Function} callback({ fcp, fmp, tti })
      */
     then: function (callback) {
-        onEnded = callback;
+        if (enabled && isFunction(callback)) {
+            if (ended) {
+                callback(result);
+            }
+            else {
+                thenActionList.push(callback);
+            }
+        }
     }
 };
 

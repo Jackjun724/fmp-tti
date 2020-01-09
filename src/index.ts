@@ -43,18 +43,16 @@ const FMP_DURATION: number = 50;
 const cacheKey = `ft-${location.pathname}`;
 
 /** 是否开启统计 */
-let enabled = true;
-/**
- * 检测完成回调
- * @param result {SpdResult} 检测结果
- */
-let onEnded: Function;
+let enabled = !!(START_TIME && MutationObserver);
+/** 是否已经完成检测 */
+let ended: boolean = !enabled;
+/** 用于存放检测完成的回调方法 */
+let thenActionList: { (params: SpdResult): void; }[] = [];
 
 /** FCP（首次内容渲染） */
 let fcp: SpdPoint;
 /** FMP（首次有意义渲染） */
 let fmp: SpdPoint;
-let ended: boolean;
 let currentPaintPoint: SpdPoint;
 let result: SpdResult;
 let lastResult: string;
@@ -73,8 +71,20 @@ function getNow(): number {
 }
 
 /**
+ * 提取检测结果
+ * @param {number} tti tti时间
+ */
+function setResult(tti: number) {
+    result = {
+        fcp: fcp ? fcp.t : tti,
+        fmp: fmp ? fmp.t : tti,
+        tti
+    };
+}
+
+/**
  * 测试节点得分
- * @param node {HTMLElement} 待检测节点
+ * @param {HTMLElement} node 待检测节点
  * @returns {number} 得分
  */
 function checkNodeScore(node: HTMLElement): number {
@@ -107,6 +117,7 @@ function checkNodeScore(node: HTMLElement): number {
 
 let timer = 0;
 let ttiDuration = 1;
+
 /**
  * 检测可交互时间
  */
@@ -142,11 +153,7 @@ function checkTTI() {
                 }
                 if (currentFrameTime - lastLongTaskTime > 1000 || currentFrameTime > DURATION) {
                     // 记录下来，如果页面被关闭，下次打开时可以使用本次结果上报
-                    result = {
-                        fcp: fcp.t,
-                        fmp: fmp.t,
-                        tti: lastLongTaskTime
-                    };
+                    setResult(lastLongTaskTime);
                     storage.setItem(cacheKey, JSON.stringify(result));
                 } else {
                     checkLongTask();
@@ -159,7 +166,7 @@ function checkTTI() {
 
 /**
  * 记录每阶段得分变化
- * @param score {number} 本次得分
+ * @param {number} score 本次得分
  */
 function addScore(score: number) {
     if (score > 0) {
@@ -205,7 +212,7 @@ function addScore(score: number) {
 
 /**
  * 计算并记录图片节点得分
- * @param event {Event}
+ * @param {Event} event
  */
 function addImgScore(this: HTMLImageElement) {
     addScore(checkNodeScore(this));
@@ -214,7 +221,7 @@ function addImgScore(this: HTMLImageElement) {
 
 /**
  * 测试节点列表得分
- * @param nodes {NodeList} 节点列表
+ * @param {NodeList} nodes 节点列表
  * @returns {number} 得分
  */
 function checkNodeList(nodes: NodeList): number {
@@ -232,9 +239,7 @@ function checkNodeList(nodes: NodeList): number {
     return score;
 }
 
-if (!enabled || !START_TIME || !MutationObserver) {
-    ended = true;
-} else {
+if (enabled) {
     doc.addEventListener('DOMContentLoaded', () => {
         isReady = true;
         if (onReady) {
@@ -260,14 +265,12 @@ if (!enabled || !START_TIME || !MutationObserver) {
         if (!ended) {
             storage.removeItem(cacheKey);
             ended = true;
+            if (!result) {
+                setResult(getNow());
+            }
             observer.disconnect();
-            if (enabled && isFunction(onEnded)) {
-                let now = getNow();
-                onEnded(result || {
-                    fcp: fcp ? fcp.t : now,
-                    fmp: fmp ? fmp.t : now,
-                    tti: now
-                });
+            if (enabled) {
+                thenActionList.forEach(item => item(result));
             }
         }
     }, DURATION);
@@ -289,9 +292,9 @@ export default {
     },
     /**
      * 检测是否有上次未完成的检测结果，有结果时会触发回调
-     * @param callback({ fcp, fmp, tti }) {Function}
+     * @param {Function} callback({ fcp, fmp, tti })
      */
-    last(callback: Function) {
+    last(callback: { (params: SpdResult): void; }) {
         if (lastResult) {
             try {
                 callback(JSON.parse(lastResult));
@@ -302,9 +305,15 @@ export default {
     },
     /**
      * 检测完成后触发
-     * @param callback({ fcp, fmp, tti }) {Function}
+     * @param {Function} callback({ fcp, fmp, tti })
      */
-    then(callback: Function) {
-        onEnded = callback;
+    then(callback: { (params: SpdResult): void; }) {
+        if (enabled && isFunction(callback)) {
+            if (ended) {
+                callback(result);
+            } else {
+                thenActionList.push(callback);
+            }
+        }
     }
 };

@@ -4,8 +4,8 @@ const storage = localStorage;
 
 /**
  * 保存数据
- * @param key {string}
- * @param value {string}
+ * @param {string} key
+ * @param {string} value
  */
 export function setItem(key: string, value: string) {
     try {
@@ -15,7 +15,7 @@ export function setItem(key: string, value: string) {
 
 /**
  * 获取数据
- * @param key {string}
+ * @param {string} key
  * @returns {string}
  */
 export function getItem(key: string) {
@@ -26,7 +26,7 @@ export function getItem(key: string) {
 
 /**
  * 删除数据
- * @param key {string}
+ * @param {string} key
  */
 export function removeItem(key: string) {
     try {

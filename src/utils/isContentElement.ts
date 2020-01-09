@@ -1,6 +1,6 @@
 /**
  * 是否是有效的内容标签
- * @param node {HTMLElement} 元素节点
+ * @param {HTMLElement} node 元素节点
  */
 export default function isContentElement(node: HTMLElement) {
     let tagName = node && node.tagName;
