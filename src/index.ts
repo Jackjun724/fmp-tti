@@ -3,6 +3,8 @@ import getText from './utils/getText';
 import isContentElement from './utils/isContentElement';
 import isContentText from './utils/isContentText';
 import isFunction from '@qmfe/is-function';
+import window from './utils/window';
+import document from './utils/document';
 
 /** 渲染统计点 */
 interface SpdPoint {
@@ -26,16 +28,12 @@ interface SpdResult {
     tti: number;
 }
 
-// 使用临时变量，建设压缩后的文件大小
-const win = window;
-const doc = document;
-
-const { innerHeight: windowHeight, performance, setTimeout, MutationObserver } = win;
+const { innerHeight: windowHeight, performance, setTimeout, MutationObserver } = window;
 let timing = performance && performance.timing;
 /** 开始时间 */
 const START_TIME: number = timing && timing.navigationStart;
 /** 页面周期，超过10秒强制上报 */
-const DURATION: number = (<any>win).TTI_LIMIT || 10000;
+const DURATION: number = (<any>window).TTI_LIMIT || 10000;
 /** FMP计算区间 */
 const FMP_DURATION: number = 50;
 
@@ -45,7 +43,7 @@ const cacheKey = `ft-${location.pathname}`;
 /** 是否开启统计 */
 let enabled = !!(START_TIME && MutationObserver);
 /** 是否已经完成检测 */
-let ended: boolean = !enabled;
+let ended = !enabled;
 /** 用于存放检测完成的回调方法 */
 let thenActionList: { (params: SpdResult): void; }[] = [];
 
@@ -61,6 +59,10 @@ let lastResult: string;
 let isReady: boolean;
 /** DomReady时要执行的方法 */
 let onReady: Function;
+
+let observer: MutationObserver;
+let timer = 0;
+let ttiDuration = 1;
 
 /**
  * 获取从 navigationStart 到当前的时间
@@ -89,19 +91,20 @@ function setResult(tti: number) {
  */
 function checkNodeScore(node: HTMLElement): number {
     let score = 0;
-    if (node !== doc.body) {
+    let domReac: DOMRect;
+    let childNodes: NodeList;
+    if (node !== document.body) {
         // 只看一屏内的标签
-        const domReac = node.getBoundingClientRect();
+        domReac = node.getBoundingClientRect();
         if (domReac.top < windowHeight) {
             if (domReac.width > 0 && domReac.height > 0) {
-                const isImage = node.tagName === 'IMG';
-                if (!isImage) {
+                if (node.tagName !== 'IMG') {
                     if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
                         // 只统计首屏内元素，不再需要根据top值来计算得分
                         // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
                         score = 1;
                         // 加上子元素得分
-                        const { childNodes } = node;
+                        childNodes = node.childNodes;
                         if (childNodes && childNodes.length) {
                             score += checkNodeList(childNodes);
                         }
@@ -115,9 +118,6 @@ function checkNodeScore(node: HTMLElement): number {
     return score;
 }
 
-let timer = 0;
-let ttiDuration = 1;
-
 /**
  * 检测可交互时间
  */
@@ -126,16 +126,19 @@ function checkTTI() {
     // 标记开始计算TTI
     let startTime: number;
     let lastLongTaskTime: number;
+    let lastFrameTime: number;
+    let currentFrameTime: number;
+    let taskTime: number;
     function checkLongTask() {
         if (enabled && !ended) {
-            let lastFrameTime = getNow();
+            lastFrameTime = getNow();
             if (!startTime) {
                 startTime = lastLongTaskTime = lastFrameTime;
             }
             // ios 不支持 requestIdleCallback，所以都使用 setTimeout
             timer = setTimeout(() => {
-                let currentFrameTime = getNow();
-                let taskTime = currentFrameTime - lastFrameTime;
+                currentFrameTime = getNow();
+                taskTime = currentFrameTime - lastFrameTime;
                 // 模仿tcp拥塞控制方式，根据耗时变化动态调整检测间隔，减少CPU消耗
                 if (taskTime - ttiDuration < 10) {
                     if (ttiDuration < 16) {
@@ -183,7 +186,7 @@ function addScore(score: number) {
         }
         // 选取得分变化最大的区间中得分变化最大的点作为FMP
         let targetFmp = paintPoint;
-        while ((paintPoint = paintPoint.p)) {
+        while (paintPoint = paintPoint.p) {
             if (time - paintPoint.t > FMP_DURATION) {
                 // 超过判断区间，中断链表遍历
                 delete paintPoint.p;
@@ -240,15 +243,15 @@ function checkNodeList(nodes: NodeList): number {
 }
 
 if (enabled) {
-    doc.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', () => {
         isReady = true;
         if (onReady) {
             onReady();
         }
     });
-    let observer = new MutationObserver(records => {
+    observer = new MutationObserver((records: MutationRecord[]) => {
         // 等到body标签初始化完才开始计算
-        if (enabled && doc.body) {
+        if (enabled && document.body) {
             let score = 0;
             records.forEach(record => {
                 score += checkNodeList(record.addedNodes);
@@ -256,7 +259,7 @@ if (enabled) {
             addScore(score);
         }
     });
-    observer.observe(doc, {
+    observer.observe(document, {
         childList: true,
         subtree: true
     });
@@ -298,8 +301,9 @@ export default {
         if (lastResult) {
             try {
                 callback(JSON.parse(lastResult));
-                // eslint-disable-next-line no-empty
-            } catch (error) { }
+            }
+            // eslint-disable-next-line no-empty
+            catch (error) { }
             storage.removeItem(cacheKey);
         }
     },

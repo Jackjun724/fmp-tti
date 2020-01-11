@@ -1,5 +1,8 @@
+/** 用临时变量存放 window，减少压缩后的文件大小 */
+var win = window;
+
 /* eslint-disable no-empty */
-var storage = localStorage;
+var storage = win.localStorage;
 /**
  * 保存数据
  * @param {string} key
@@ -83,9 +86,9 @@ function isFunction(value) {
   return typeof value === 'function';
 }
 
-// 使用临时变量，建设压缩后的文件大小
-var win = window;
+/** 用临时变量存放 document，减少压缩后的文件大小 */
 var doc = document;
+
 var windowHeight = win.innerHeight, performance = win.performance, setTimeout = win.setTimeout, MutationObserver = win.MutationObserver;
 var timing = performance && performance.timing;
 /** 开始时间 */
@@ -113,6 +116,9 @@ var lastResult;
 var isReady;
 /** DomReady时要执行的方法 */
 var onReady;
+var observer;
+var timer = 0;
+var ttiDuration = 1;
 /**
  * 获取从 navigationStart 到当前的时间
  * @returns {number}
@@ -138,19 +144,20 @@ function setResult(tti) {
  */
 function checkNodeScore(node) {
     var score = 0;
+    var domReac;
+    var childNodes;
     if (node !== doc.body) {
         // 只看一屏内的标签
-        var domReac = node.getBoundingClientRect();
+        domReac = node.getBoundingClientRect();
         if (domReac.top < windowHeight) {
             if (domReac.width > 0 && domReac.height > 0) {
-                var isImage = node.tagName === 'IMG';
-                if (!isImage) {
+                if (node.tagName !== 'IMG') {
                     if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
                         // 只统计首屏内元素，不再需要根据top值来计算得分
                         // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
                         score = 1;
                         // 加上子元素得分
-                        var childNodes = node.childNodes;
+                        childNodes = node.childNodes;
                         if (childNodes && childNodes.length) {
                             score += checkNodeList(childNodes);
                         }
@@ -164,8 +171,6 @@ function checkNodeScore(node) {
     }
     return score;
 }
-var timer = 0;
-var ttiDuration = 1;
 /**
  * 检测可交互时间
  */
@@ -174,16 +179,19 @@ function checkTTI() {
     // 标记开始计算TTI
     var startTime;
     var lastLongTaskTime;
+    var lastFrameTime;
+    var currentFrameTime;
+    var taskTime;
     function checkLongTask() {
         if (enabled && !ended) {
-            var lastFrameTime_1 = getNow();
+            lastFrameTime = getNow();
             if (!startTime) {
-                startTime = lastLongTaskTime = lastFrameTime_1;
+                startTime = lastLongTaskTime = lastFrameTime;
             }
             // ios 不支持 requestIdleCallback，所以都使用 setTimeout
             timer = setTimeout(function () {
-                var currentFrameTime = getNow();
-                var taskTime = currentFrameTime - lastFrameTime_1;
+                currentFrameTime = getNow();
+                taskTime = currentFrameTime - lastFrameTime;
                 // 模仿tcp拥塞控制方式，根据耗时变化动态调整检测间隔，减少CPU消耗
                 if (taskTime - ttiDuration < 10) {
                     if (ttiDuration < 16) {
@@ -199,7 +207,7 @@ function checkTTI() {
                 else if (taskTime > 50) {
                     ttiDuration = Math.max(1, ttiDuration / 2);
                 }
-                if (currentFrameTime - lastFrameTime_1 > 50) {
+                if (currentFrameTime - lastFrameTime > 50) {
                     lastLongTaskTime = currentFrameTime;
                 }
                 if (currentFrameTime - lastLongTaskTime > 1000 || currentFrameTime > DURATION) {
@@ -234,7 +242,7 @@ function addScore(score) {
         }
         // 选取得分变化最大的区间中得分变化最大的点作为FMP
         var targetFmp = paintPoint;
-        while ((paintPoint = paintPoint.p)) {
+        while (paintPoint = paintPoint.p) {
             if (time - paintPoint.t > FMP_DURATION) {
                 // 超过判断区间，中断链表遍历
                 delete paintPoint.p;
@@ -298,7 +306,7 @@ if (enabled) {
             onReady();
         }
     });
-    var observer_1 = new MutationObserver(function (records) {
+    observer = new MutationObserver(function (records) {
         // 等到body标签初始化完才开始计算
         if (enabled && doc.body) {
             var score_1 = 0;
@@ -308,7 +316,7 @@ if (enabled) {
             addScore(score_1);
         }
     });
-    observer_1.observe(doc, {
+    observer.observe(doc, {
         childList: true,
         subtree: true
     });
@@ -320,7 +328,7 @@ if (enabled) {
             if (!result) {
                 setResult(getNow());
             }
-            observer_1.disconnect();
+            observer.disconnect();
             if (enabled) {
                 thenActionList.forEach(function (item) { return item(result); });
             }
@@ -349,8 +357,8 @@ var index = {
         if (lastResult) {
             try {
                 callback(JSON.parse(lastResult));
-                // eslint-disable-next-line no-empty
             }
+            // eslint-disable-next-line no-empty
             catch (error) { }
             removeItem(cacheKey);
         }

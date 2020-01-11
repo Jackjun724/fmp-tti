@@ -1,6 +1,7 @@
 /* eslint-disable no-empty */
+import window from './window';
 
-const storage = localStorage;
+const storage = window.localStorage;
 
 /**
  * 保存数据
@@ -18,7 +19,7 @@ export function setItem(key: string, value: string) {
  * @param {string} key
  * @returns {string}
  */
-export function getItem(key: string) {
+export function getItem(key: string): string {
     try {
         return storage.getItem(key);
     } catch (ex) {}
