@@ -11,7 +11,7 @@
     "beta": "npm publish --tag beta"
   },
   "author": "ctchen",
-  "license": "MulanPSL-1.0",
+  "license": "MulanPSL-2.0",
   "devDependencies": {
     "@babel/core": "^7.11.1",
     "@babel/preset-env": "^7.11.0",
