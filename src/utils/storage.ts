@@ -1,7 +1,7 @@
 /* eslint-disable no-empty */
 import window from './window';
 
-const storage = window.localStorage;
+const { localStorage: storage } = window;
 
 /**
  * 保存数据
@@ -11,7 +11,7 @@ const storage = window.localStorage;
 export function setItem(key: string, value: string) {
     try {
         storage.setItem(key, value);
-    } catch (ex) {}
+    } catch (ex) { }
 }
 
 /**
@@ -22,7 +22,7 @@ export function setItem(key: string, value: string) {
 export function getItem(key: string): string {
     try {
         return storage.getItem(key);
-    } catch (ex) {}
+    } catch (ex) { }
 }
 
 /**
@@ -32,5 +32,5 @@ export function getItem(key: string): string {
 export function removeItem(key: string) {
     try {
         return storage.removeItem(key);
-    } catch (ex) {}
+    } catch (ex) { }
 }

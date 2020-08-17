@@ -155,23 +155,21 @@
         if (node !== doc.body) {
             // 只看一屏内的标签
             domReac = node.getBoundingClientRect();
-            if (domReac.top < windowHeight) {
-                if (domReac.width > 0 && domReac.height > 0) {
-                    if (node.tagName !== 'IMG') {
-                        if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
-                            // 只统计首屏内元素，不再需要根据top值来计算得分
-                            // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
-                            score = 1;
-                            // 加上子元素得分
-                            childNodes = node.childNodes;
-                            if (childNodes && childNodes.length) {
-                                score += checkNodeList(childNodes);
-                            }
+            if (domReac.y < windowHeight && domReac.width > 0 && domReac.height > 0) {
+                if (node.tagName !== 'IMG') {
+                    if (getText(node) || getComputedStyle(node).backgroundImage !== 'none') {
+                        // 只统计首屏内元素，不再需要根据top值来计算得分
+                        // score += top > windowHeight ? (windowHeight / top) * (windowHeight / top) : 1;
+                        score = 1;
+                        // 加上子元素得分
+                        childNodes = node.childNodes;
+                        if (childNodes && childNodes.length) {
+                            score += checkNodeList(childNodes);
                         }
                     }
-                    else if (!!node.src) {
-                        score = 1;
-                    }
+                }
+                else if (!!node.src) {
+                    score = 1;
                 }
             }
         }
