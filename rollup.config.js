@@ -1,14 +1,15 @@
-import babel from '@rollup/plugin-babel';
-import process from 'process';
-import typescript from '@rollup/plugin-typescript';
-import { terser } from 'rollup-plugin-terser';
+const { argv } = require('process');
+const { babel } = require('@rollup/plugin-babel');
+const { eslint } = require('rollup-plugin-eslint');
+const typescript = require('@rollup/plugin-typescript');
+const { terser } = require('rollup-plugin-terser');
 
-const isDev = process.argv.indexOf('-w') !== -1;
+const isDev = argv.indexOf('-w') !== -1;
 
 export default [
     {
         input: './src/index.ts',
-        plugins: [typescript(), babel.babel(), isDev ? null : terser()],
+        plugins: [eslint(), typescript(), babel({ babelHelpers: 'bundled' }), isDev ? null : terser()],
         output: {
             file: './index.iife.js',
             format: 'iife',
@@ -19,7 +20,7 @@ export default [
     },
     {
         input: './src/index.ts',
-        plugins: [typescript(), babel.babel()],
+        plugins: [typescript(), babel({ babelHelpers: 'bundled' })],
         output: {
             file: './index.umd.js',
             format: 'umd',
@@ -30,11 +31,7 @@ export default [
     },
     {
         input: './src/index.ts',
-        plugins: [
-            // eslint(),
-            typescript(),
-            babel.babel(),
-        ],
+        plugins: [typescript(), babel({ babelHelpers: 'bundled' })],
         output: {
             file: './index.js',
             format: 'esm',
