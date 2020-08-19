@@ -16,7 +16,7 @@ export default [
     //         name: 'FT',
     //         sourcemap: false,
     //         strict: true,
-    //     },
+    //     }
     // },
     // {
     //     input: './src/index.ts',
@@ -27,7 +27,7 @@ export default [
     //         name: 'FT',
     //         sourcemap: false,
     //         strict: true,
-    //     },
+    //     }
     // },
     // {
     //     input: './src/index.ts',
@@ -37,7 +37,7 @@ export default [
     //         format: 'esm',
     //         sourcemap: false,
     //         strict: true,
-    //     },
+    //     }
     // },
     {
         input: './src/size.ts',
@@ -45,6 +45,17 @@ export default [
         output: {
             file: './size.iife.js',
             format: 'iife',
+            name: 'FT',
+            sourcemap: false,
+            strict: true,
+        }
+    },
+    {
+        input: './src/size.ts',
+        plugins: [typescript(), babel({ babelHelpers: 'bundled' })],
+        output: {
+            file: './size.umd.js',
+            format: 'umd',
             name: 'FT',
             sourcemap: false,
             strict: true,
